@@ -1,0 +1,47 @@
+# exclude SafeMath when calculating test coverage
+# https://eth-brownie.readthedocs.io/en/v1.10.3/config.html#exclude_paths
+reports:
+  exclude_contracts:
+    - SafeMath
+dependencies:
+  - smartcontractkit/chainlink-brownie-contracts@0.2.2
+  - OpenZeppelin/openzeppelin-contracts@4.3.2
+compiler:
+  solc:
+    remappings:
+      - "@chainlink=smartcontractkit/chainlink-brownie-contracts@0.2.2"
+      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.3.2"
+# automatically fetch contract sources from Etherscan
+autofetch_sources: True
+# Uncomment to use the .env file
+dotenv: .env
+# set a custom mnemonic for the development network
+networks:
+  default: development
+  development:
+    keyhash: "0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4"
+    fee: 100000000000000000
+    jobId: "29fa9aa13bf1468788b7cc4a500a45b8"
+    update_interval: 60
+    chainlink_node: ${CHAINLINK_NODE_ADDRESS}
+    post_job_id: "d51f39a09b524651aa3f6ccdddced68e"
+    verify: False
+  kovan:
+    vrf_coordinator: "0xdD3782915140c8f3b190B5D67eAc6dc5760C46E9"
+    link_token: "0xa36085F69e2889c224210F603D836748e7dC0088"
+    keyhash: "0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4"
+    fee: 100000000000000000
+    post_job_id: "d51f39a09b524651aa3f6ccdddced68e"
+    chainlink_node: ${CHAINLINK_NODE_ADDRESS}
+    oracle: "0x7D2a293501AdeBaf0D29de5d3786Ad8525662776"
+    jobId: "d5270d1c311941d0b08bead21fea7747"
+    eth_usd_price_feed: "0x9326BFA02ADD2366b30bacB125260Af641031331"
+    # Change to True if you have an Etherscan API key and want to verify
+    verify: False
+    update_interval: 60
+
+wallets:
+  from_key: ${PRIVATE_KEY}
+  from_mnemonic: ${MNEMONIC}
+
+  # could also do from_mnemonic, and you'd have to change the accounts.add to accounts.from_mnemonic
