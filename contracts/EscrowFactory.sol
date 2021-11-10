@@ -2,8 +2,9 @@
 pragma solidity ^0.8.7;
 
 import "./Escrow.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract EscrowFactory {
+contract EscrowFactory is Ownable {
     address linkToken;
     address oracle;
     string jobId;
@@ -15,6 +16,7 @@ contract EscrowFactory {
         string memory _jobId,
         uint256 _maxLockPeriod
     ) {
+        require(_maxLockPeriod >= 0, "lock period must be greater than 0");
         linkToken = _linkToken;
         oracle = _oracle;
         jobId = _jobId;
@@ -58,5 +60,10 @@ contract EscrowFactory {
 
         emit ProductCreated(msg.sender, addr);
         return addr;
+    }
+
+    function setMaxLockPeriod(uint256 _maxLockPeriod) external onlyOwner {
+        require(_maxLockPeriod >= 0, "lock period must be greater than 0");
+        maxLockPeriod = _maxLockPeriod;
     }
 }
