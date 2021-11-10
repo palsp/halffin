@@ -1,15 +1,13 @@
-from brownie import Escrow, config, network, Contract, interface
-from scripts.helpful_scripts import get_account, get_contract, LOCAL_BLOCKCHAIN_ENVIRONMENTS
+from brownie import Escrow, strings, config, network, Contract, interface
+from scripts.helpful_scripts import get_account, get_contract, SELLING_PRICE, LOCK_PERIOD
 from web3 import Web3
-
-
-SELLING_PRICE = Web3.toWei(0.01, "ether")
-LOCK_PERIOD = 32727  # 5 days
 
 
 def deploy_escrow(seller, lock_period=LOCK_PERIOD):
     account = get_account()
-    escrow = Escrow.deploy(
+    strings.deploy({"from": account})
+    escrow = Escrow.deploy({"from": account})
+    escrow.init(
         get_contract("link_token").address,
         get_contract("oracle").address,
         config["networks"][network.show_active()]["post_job_id"],

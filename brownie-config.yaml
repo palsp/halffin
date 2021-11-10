@@ -26,6 +26,14 @@ networks:
     chainlink_node: ${CHAINLINK_NODE_ADDRESS}
     post_job_id: "d51f39a09b524651aa3f6ccdddced68e"
     verify: False
+  ganache-local:
+    keyhash: "0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4"
+    fee: 100000000000000000
+    jobId: "29fa9aa13bf1468788b7cc4a500a45b8"
+    update_interval: 60
+    chainlink_node: ${CHAINLINK_NODE_ADDRESS}
+    post_job_id: "d51f39a09b524651aa3f6ccdddced68e"
+    verify: False
   kovan:
     vrf_coordinator: "0xdD3782915140c8f3b190B5D67eAc6dc5760C46E9"
     link_token: "0xa36085F69e2889c224210F603D836748e7dC0088"

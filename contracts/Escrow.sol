@@ -4,13 +4,18 @@ pragma solidity ^0.8.7;
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "./libraries/strings.sol";
 
 contract Escrow is ChainlinkClient {
     using Chainlink for Chainlink.Request;
+    using strings for string;
+    using strings for bytes32;
+
     uint256 private constant ORACLE_PAYMENT = 1 * LINK_DIVISIBILITY;
     address private oracle;
     bytes32 private jobId;
 
+    address factory;
     Stage public stage;
     address public buyer;
     address public seller;
@@ -43,7 +48,11 @@ contract Escrow is ChainlinkClient {
         _;
     }
 
-    constructor(
+    constructor() {
+        factory = msg.sender;
+    }
+
+    function init(
         address _link,
         address _oracle,
         string memory _jobId,
@@ -51,11 +60,12 @@ contract Escrow is ChainlinkClient {
         // address _currency,
         uint256 _price,
         uint256 _lockPeriod
-    ) {
+    ) external {
+        require(msg.sender == factory, "FORBIDDEN");
         // setPublicChainlinkToken();
         setChainlinkToken(_link);
         oracle = _oracle;
-        jobId = stringToBytes32(_jobId);
+        jobId = _jobId.stringToBytes32();
         stage = Stage.Initiate;
         seller = _seller;
         // currency = IERC20(_currency);
@@ -124,18 +134,13 @@ contract Escrow is ChainlinkClient {
         public
         recordChainlinkFulfillment(_requestId)
     {
-        deliveryStatus = bytes32ToString(_deliveryStatus);
-        if (compareStrings(deliveryStatus, "delivered")) {
+        deliveryStatus = _deliveryStatus.bytes32ToString();
+        if (deliveryStatus.compareStrings("Delivered")) {
             stage = Stage.Delivered;
             emit ShipmentDelivered(_deliveryStatus);
         } else {
             emit ShipmentUpdated(_deliveryStatus);
         }
-    }
-
-    function test(bytes32 _status) public {
-        deliveryStatus = bytes32ToString(_status);
-        // require(compareStrings(deliveryStatus, "delivered"));
     }
 
     function reclaimFund()
@@ -147,46 +152,5 @@ contract Escrow is ChainlinkClient {
         // currency.transfer(msg.sender, address(this).balance);
         stage = Stage.End;
         payable(msg.sender).transfer(address(this).balance);
-    }
-
-    function stringToBytes32(string memory source)
-        private
-        pure
-        returns (bytes32 result)
-    {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            // solhint-disable-line no-inline-assembly
-            result := mload(add(source, 32))
-        }
-    }
-
-    function bytes32ToString(bytes32 _bytes32)
-        public
-        pure
-        returns (string memory)
-    {
-        uint8 i = 0;
-        while (i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
-        }
-        return string(bytesArray);
-    }
-
-    function compareStrings(string memory a, string memory b)
-        private
-        view
-        returns (bool)
-    {
-        return (keccak256(abi.encodePacked((a))) ==
-            keccak256(abi.encodePacked((b))));
     }
 }
