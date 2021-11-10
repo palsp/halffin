@@ -12,8 +12,11 @@ from brownie import (
 )
 from web3 import Web3
 
+SELLING_PRICE = Web3.toWei(0.01, "ether")
+LOCK_PERIOD = 32727  # 5 days
+
 NON_FORKED_LOCAL_BLOCKCHAIN_ENVIRONMENTS = [
-    "hardhat", "development", "ganache"]
+    "hardhat", "development", "ganache-local"]
 LOCAL_BLOCKCHAIN_ENVIRONMENTS = NON_FORKED_LOCAL_BLOCKCHAIN_ENVIRONMENTS + [
     "mainnet-fork",
     "binance-fork",
