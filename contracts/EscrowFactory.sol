@@ -7,7 +7,7 @@ contract EscrowFactory {
     address linkToken;
     address oracle;
     string jobId;
-    uint256 maxLockPeriod;
+    uint256 public maxLockPeriod;
 
     constructor(
         address _linkToken,

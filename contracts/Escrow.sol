@@ -16,16 +16,17 @@ contract Escrow is ChainlinkClient {
     bytes32 private jobId;
 
     address factory;
+
     Stage public stage;
     address public buyer;
     address public seller;
     uint256 public price;
     IERC20 public currency;
+    string trackingNo;
+    string public deliveryStatus;
 
     uint256 public lockPeriod;
     uint256 public currentBlock;
-    string trackingNo;
-    string public deliveryStatus;
 
     enum Stage {
         Initiate,
