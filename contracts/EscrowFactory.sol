@@ -9,8 +9,8 @@ contract EscrowFactory is Ownable {
     address oracle;
     string jobId;
     uint256 public maxLockPeriod;
-    uint256 productCount;
-    mapping(uint256 => address) products;
+    uint256 public productCount;
+    mapping(uint256 => address) public products;
 
     constructor(
         address _linkToken,
