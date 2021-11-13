@@ -6,7 +6,8 @@ from web3 import Web3
 def deploy_escrow(seller, lock_period=LOCK_PERIOD):
     account = get_account()
     strings.deploy({"from": account})
-    escrow = Escrow.deploy({"from": account})
+    escrow = Escrow.deploy(
+        {"from": account}, publish_source=config["networks"][network.show_active()].get("verify", False))
     escrow.init(
         get_contract("link_token").address,
         get_contract("oracle").address,

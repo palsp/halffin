@@ -45,7 +45,7 @@ networks:
     jobId: "d5270d1c311941d0b08bead21fea7747"
     eth_usd_price_feed: "0x9326BFA02ADD2366b30bacB125260Af641031331"
     # Change to True if you have an Etherscan API key and want to verify
-    verify: False
+    verify: True
     update_interval: 60
 
 wallets:
