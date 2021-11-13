@@ -4,9 +4,10 @@ pragma solidity ^0.8.7;
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "./libraries/strings.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./strings.sol";
 
-contract Escrow is ChainlinkClient {
+contract Escrow is ChainlinkClient, Ownable {
     using Chainlink for Chainlink.Request;
     using strings for string;
     using strings for bytes32;
@@ -16,17 +17,27 @@ contract Escrow is ChainlinkClient {
     bytes32 private jobId;
 
     address factory;
-
-    Stage public stage;
-    address public buyer;
-    address public seller;
-    uint256 public price;
-    IERC20 public currency;
-    string trackingNo;
-    string public deliveryStatus;
-
     uint256 public lockPeriod;
     uint256 public currentBlock;
+
+    struct Product {
+        uint256 id;
+        string name;
+        uint256 price;
+        address owner;
+        address buyer;
+        IERC20 currency;
+        bool purchased;
+        string trackingNo;
+        string deliveryStatus;
+        Stage stage;
+    }
+
+    Product public product;
+
+    // address public buyer;
+    // address public seller;
+    // uint256 public price;
 
     enum Stage {
         Initiate,
@@ -45,7 +56,12 @@ contract Escrow is ChainlinkClient {
     event OrderCompleted(string trackingNo);
 
     modifier validStage(Stage _stage, string memory message) {
-        require(_stage == stage, message);
+        require(product.stage == _stage, message);
+        _;
+    }
+
+    modifier onlyBuyer() {
+        require(msg.sender == product.buyer, "Only Buyer");
         _;
     }
 
@@ -57,6 +73,7 @@ contract Escrow is ChainlinkClient {
         address _link,
         address _oracle,
         string memory _jobId,
+        string memory _name,
         address _seller,
         // address _currency,
         uint256 _price,
@@ -65,13 +82,16 @@ contract Escrow is ChainlinkClient {
         require(msg.sender == factory, "FORBIDDEN");
         // setPublicChainlinkToken();
         setChainlinkToken(_link);
+        transferOwnership(_seller);
         oracle = _oracle;
         jobId = _jobId.stringToBytes32();
-        stage = Stage.Initiate;
-        seller = _seller;
-        // currency = IERC20(_currency);
-        price = _price;
         lockPeriod = _lockPeriod;
+
+        product.name = _name;
+        product.stage = Stage.Initiate;
+        product.owner = _seller;
+        // currency = IERC20(_currency);
+        product.price = _price;
     }
 
     function order()
@@ -79,27 +99,26 @@ contract Escrow is ChainlinkClient {
         payable
         validStage(Stage.Initiate, "Already have a buyer")
     {
-        require(msg.sender != seller, "You can not buy from yourself");
-        require(msg.value >= price, "Not enough fund");
-        stage = Stage.WaitForShipping;
-        buyer = msg.sender;
+        require(msg.sender != owner(), "You can not buy from yourself");
+        require(msg.value >= product.price, "Not enough fund");
+        product.stage = Stage.WaitForShipping;
+        product.buyer = msg.sender;
         currentBlock = block.number;
         // currency.transferFrom(msg.sender, address(this), price);
-        emit OrderInitiate(buyer);
+        emit OrderInitiate(product.buyer);
     }
 
     function cancelOrder()
         external
+        onlyBuyer
         validStage(Stage.WaitForShipping, "shipping in progress")
     {
-        require(msg.sender == buyer, "Only buyer");
-
         require(
             block.number >= currentBlock + lockPeriod,
             "Not allowed to cancel order"
         );
-        buyer = address(0);
-        stage = Stage.Initiate;
+        product.buyer = address(0);
+        product.stage = Stage.Initiate;
         // currency.transfer(msg.sender, price);
         payable(msg.sender).transfer(address(this).balance);
         emit OrderCancel(msg.sender);
@@ -107,13 +126,12 @@ contract Escrow is ChainlinkClient {
 
     function updateShipment(string memory _trackingNO)
         external
+        onlyOwner
         validStage(Stage.WaitForShipping, "Invalid Stage")
     {
-        require(msg.sender == seller, "Only Seller");
-
-        stage = Stage.Shipping;
-        trackingNo = _trackingNO;
-        emit ShipmentInprogress(trackingNo);
+        product.stage = Stage.Shipping;
+        product.trackingNo = _trackingNO;
+        emit ShipmentInprogress(product.trackingNo);
     }
 
     function requestShippingDetail()
@@ -126,7 +144,7 @@ contract Escrow is ChainlinkClient {
             this.fulfillShippingDetail.selector
         );
 
-        req.add("trackingNo", trackingNo);
+        req.add("trackingNo", product.trackingNo);
         bytes32 requestId = sendChainlinkRequestTo(oracle, req, ORACLE_PAYMENT);
         emit ChainlinkRequested(requestId);
     }
@@ -135,9 +153,9 @@ contract Escrow is ChainlinkClient {
         public
         recordChainlinkFulfillment(_requestId)
     {
-        deliveryStatus = _deliveryStatus.bytes32ToString();
-        if (deliveryStatus.compareStrings("Delivered")) {
-            stage = Stage.Delivered;
+        product.deliveryStatus = _deliveryStatus.bytes32ToString();
+        if (product.deliveryStatus.compareStrings("Delivered")) {
+            product.stage = Stage.Delivered;
             emit ShipmentDelivered(_deliveryStatus);
         } else {
             emit ShipmentUpdated(_deliveryStatus);
@@ -146,12 +164,11 @@ contract Escrow is ChainlinkClient {
 
     function reclaimFund()
         external
+        onlyOwner
         validStage(Stage.Delivered, "Invalid Stage")
     {
-        require(msg.sender == seller, "Only Seller");
-
         // currency.transfer(msg.sender, address(this).balance);
-        stage = Stage.End;
+        product.stage = Stage.End;
         payable(msg.sender).transfer(address(this).balance);
     }
 }

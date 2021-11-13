@@ -6,7 +6,7 @@ def create_product(lock_period=LOCK_PERIOD):
     account = get_account(1)
     escrow_factory = EscrowFactory[-1]
     tx = escrow_factory.createProduct(
-        SELLING_PRICE, lock_period, {"from": account})
+        "iphone X", SELLING_PRICE, lock_period, {"from": account})
     print(
         f'escrow contract created for {tx.events["ProductCreated"]["seller"]}')
     print(

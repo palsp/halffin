@@ -28,7 +28,11 @@ contract EscrowFactory is Ownable {
 
     event ProductCreated(address indexed seller, address product);
 
-    function createProduct(uint256 _price, uint256 _lockPeriod) external {
+    function createProduct(
+        string memory _name,
+        uint256 _price,
+        uint256 _lockPeriod
+    ) external {
         uint256 lockPeriod = _lockPeriod;
         if (lockPeriod > maxLockPeriod) {
             lockPeriod = maxLockPeriod;
@@ -38,6 +42,7 @@ contract EscrowFactory is Ownable {
                 linkToken,
                 oracle,
                 jobId,
+                _name,
                 msg.sender,
                 _price,
                 lockPeriod,
@@ -51,6 +56,7 @@ contract EscrowFactory is Ownable {
             linkToken,
             oracle,
             jobId,
+            _name,
             msg.sender,
             _price,
             lockPeriod
