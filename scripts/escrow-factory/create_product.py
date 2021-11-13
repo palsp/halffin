@@ -3,13 +3,14 @@ from brownie import EscrowFactory
 
 
 def create_product(lock_period=LOCK_PERIOD):
-    account = get_account()
+    account = get_account(1)
     escrow_factory = EscrowFactory[-1]
     tx = escrow_factory.createProduct(
         SELLING_PRICE, lock_period, {"from": account})
     print(
         f'escrow contract created for {tx.events["ProductCreated"]["seller"]}')
-    print(f"escrow contract deployed at {tx.return_value}")
+    print(
+        f'escrow contract deployed at {tx.events["ProductCreated"]["product"]}')
 
 
 def main():
