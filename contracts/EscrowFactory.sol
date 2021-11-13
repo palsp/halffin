@@ -9,6 +9,8 @@ contract EscrowFactory is Ownable {
     address oracle;
     string jobId;
     uint256 public maxLockPeriod;
+    uint256 productCount;
+    mapping(uint256 => address) products;
 
     constructor(
         address _linkToken,
@@ -20,20 +22,17 @@ contract EscrowFactory is Ownable {
         linkToken = _linkToken;
         oracle = _oracle;
         jobId = _jobId;
+        productCount = 0;
         maxLockPeriod = _maxLockPeriod;
     }
 
     event ProductCreated(address indexed seller, address product);
 
-    function createProduct(uint256 _price, uint256 _lockPeriod)
-        external
-        returns (address addr)
-    {
+    function createProduct(uint256 _price, uint256 _lockPeriod) external {
         uint256 lockPeriod = _lockPeriod;
         if (lockPeriod > maxLockPeriod) {
             lockPeriod = maxLockPeriod;
         }
-        bytes memory bytecode = type(Escrow).creationCode;
         bytes32 salt = keccak256(
             abi.encodePacked(
                 linkToken,
@@ -41,15 +40,14 @@ contract EscrowFactory is Ownable {
                 jobId,
                 msg.sender,
                 _price,
-                lockPeriod
+                lockPeriod,
+                productCount
             )
         );
 
-        assembly {
-            addr := create2(0, add(bytecode, 32), mload(bytecode), salt)
-        }
+        address product = address(new Escrow{salt: salt}());
 
-        Escrow(addr).init(
+        Escrow(product).init(
             linkToken,
             oracle,
             jobId,
@@ -58,8 +56,10 @@ contract EscrowFactory is Ownable {
             lockPeriod
         );
 
-        emit ProductCreated(msg.sender, addr);
-        return addr;
+        productCount++;
+        products[productCount] = product;
+
+        emit ProductCreated(msg.sender, product);
     }
 
     function setMaxLockPeriod(uint256 _maxLockPeriod) external onlyOwner {
