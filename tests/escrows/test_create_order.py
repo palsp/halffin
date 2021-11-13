@@ -43,8 +43,9 @@ def test_can_create_order():
     escrow = deploy_escrow(seller)
     buyer = get_account(1)
     starting_buyer_balance = buyer.balance()
-    assert escrow.stage() == 0
+    assert escrow.product()[-1] == 0
     create_order(buyer)
-    assert escrow.buyer() == buyer
-    assert escrow.stage() == 1
+    # buyer
+    assert escrow.product()[4] == buyer
+    assert escrow.product()[-1] == 1
     assert buyer.balance() == starting_buyer_balance - escrow.balance()

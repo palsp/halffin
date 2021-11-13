@@ -29,8 +29,10 @@ def test_can_cancel_order_after_lock_period():
     starting_buyer_balance = buyer.balance()
     escrow_balance = escrow.balance()
     escrow.cancelOrder({"from": buyer})
-    assert escrow.stage() == 0
-    assert escrow.buyer() == '0x0000000000000000000000000000000000000000'
+    # stage
+    assert escrow.product()[-1] == 0
+    #  buyer
+    assert escrow.product()[4] == '0x0000000000000000000000000000000000000000'
     assert escrow.balance() == 0
     assert buyer.balance() == starting_buyer_balance + escrow_balance
 
