@@ -2,8 +2,6 @@
 pragma solidity ^0.8.7;
 
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
-import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./strings.sol";
 
@@ -26,9 +24,9 @@ contract Escrow is ChainlinkClient, Ownable {
         uint256 price;
         address owner;
         address buyer;
-        IERC20 currency;
+        // IERC20 currency;
         bool purchased;
-        string trackingNo;
+        string trackingId;
         string deliveryStatus;
         Stage stage;
     }
@@ -124,14 +122,14 @@ contract Escrow is ChainlinkClient, Ownable {
         emit OrderCancel(msg.sender);
     }
 
-    function updateShipment(string memory _trackingNO)
+    function updateShipment(string memory _trackingId)
         external
         onlyOwner
         validStage(Stage.WaitForShipping, "Invalid Stage")
     {
         product.stage = Stage.Shipping;
-        product.trackingNo = _trackingNO;
-        emit ShipmentInprogress(product.trackingNo);
+        product.trackingId = _trackingId;
+        emit ShipmentInprogress(product.trackingId);
     }
 
     function requestShippingDetail()
@@ -144,7 +142,7 @@ contract Escrow is ChainlinkClient, Ownable {
             this.fulfillShippingDetail.selector
         );
 
-        req.add("trackingNo", product.trackingNo);
+        req.add("trackingId", product.trackingId);
         bytes32 requestId = sendChainlinkRequestTo(oracle, req, ORACLE_PAYMENT);
         emit ChainlinkRequested(requestId);
     }

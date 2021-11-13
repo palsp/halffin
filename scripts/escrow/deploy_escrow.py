@@ -1,9 +1,9 @@
 from brownie import Escrow, strings, config, network, Contract, interface
-from scripts.helpful_scripts import get_account, get_contract, SELLING_PRICE, LOCK_PERIOD
+from scripts.helpful_scripts import get_account, get_contract, SELLING_PRICE, LOCK_PERIOD, PRODUCT_NAME
 from web3 import Web3
 
 
-def deploy_escrow(seller, lock_period=LOCK_PERIOD):
+def deploy_escrow(seller, lock_period=LOCK_PERIOD, product_name=PRODUCT_NAME):
     account = get_account()
     strings.deploy({"from": account})
     escrow = Escrow.deploy(
@@ -12,6 +12,7 @@ def deploy_escrow(seller, lock_period=LOCK_PERIOD):
         get_contract("link_token").address,
         get_contract("oracle").address,
         config["networks"][network.show_active()]["post_job_id"],
+        product_name,
         seller,
         SELLING_PRICE,
         lock_period,

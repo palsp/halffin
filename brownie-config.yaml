@@ -39,13 +39,13 @@ networks:
     link_token: "0xa36085F69e2889c224210F603D836748e7dC0088"
     keyhash: "0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4"
     fee: 100000000000000000
-    post_job_id: "d51f39a09b524651aa3f6ccdddced68e"
+    post_job_id: "6722ab62e9fa4b2e8aa6d3a8cf849990"
     chainlink_node: ${CHAINLINK_NODE_ADDRESS}
-    oracle: "0x7D2a293501AdeBaf0D29de5d3786Ad8525662776"
+    oracle: "0xd47cA0e516acEBeD47bfBae2202Bf8a78f317ee3"
     jobId: "d5270d1c311941d0b08bead21fea7747"
     eth_usd_price_feed: "0x9326BFA02ADD2366b30bacB125260Af641031331"
     # Change to True if you have an Etherscan API key and want to verify
-    verify: True
+    verify: False
     update_interval: 60
 
 wallets:

@@ -3,7 +3,7 @@ from brownie import EscrowFactory
 
 
 def create_product(lock_period=LOCK_PERIOD):
-    account = get_account(1)
+    account = get_account()
     escrow_factory = EscrowFactory[-1]
     tx = escrow_factory.createProduct(
         "iphone X", SELLING_PRICE, lock_period, {"from": account})
