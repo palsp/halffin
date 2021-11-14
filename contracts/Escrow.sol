@@ -71,6 +71,7 @@ contract Escrow is ChainlinkClient, Ownable {
         address _link,
         address _oracle,
         string memory _jobId,
+        uint256 _id,
         string memory _name,
         address _seller,
         // address _currency,
@@ -85,6 +86,7 @@ contract Escrow is ChainlinkClient, Ownable {
         jobId = _jobId.stringToBytes32();
         lockPeriod = _lockPeriod;
 
+        product.id = _id;
         product.name = _name;
         product.stage = Stage.Initiate;
         product.owner = _seller;

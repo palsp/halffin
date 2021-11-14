@@ -37,16 +37,17 @@ contract EscrowFactory is Ownable {
         if (lockPeriod > maxLockPeriod) {
             lockPeriod = maxLockPeriod;
         }
+        uint256 newId = productCount;
         bytes32 salt = keccak256(
             abi.encodePacked(
                 linkToken,
                 oracle,
                 jobId,
+                newId,
                 _name,
                 msg.sender,
                 _price,
-                lockPeriod,
-                productCount
+                lockPeriod
             )
         );
 
@@ -56,6 +57,7 @@ contract EscrowFactory is Ownable {
             linkToken,
             oracle,
             jobId,
+            newId,
             _name,
             msg.sender,
             _price,
