@@ -3,6 +3,7 @@ pragma solidity ^0.8.7;
 
 import "./Escrow.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract EscrowFactory is Ownable {
     address linkToken;
@@ -10,6 +11,7 @@ contract EscrowFactory is Ownable {
     string jobId;
     uint256 public maxLockPeriod;
     uint256 public productCount;
+    uint256 internal constant oracleFee = 1 * 10**18;
     mapping(uint256 => address) public products;
 
     constructor(
@@ -47,7 +49,8 @@ contract EscrowFactory is Ownable {
                 _name,
                 msg.sender,
                 _price,
-                lockPeriod
+                lockPeriod,
+                oracleFee
             )
         );
 
@@ -61,8 +64,11 @@ contract EscrowFactory is Ownable {
             _name,
             msg.sender,
             _price,
-            lockPeriod
+            lockPeriod,
+            oracleFee
         );
+
+        ERC20(linkToken).transfer(product, 3 * oracleFee);
 
         productCount++;
         products[productCount] = product;

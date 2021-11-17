@@ -10,7 +10,7 @@ contract Escrow is ChainlinkClient, Ownable {
     using strings for string;
     using strings for bytes32;
 
-    uint256 private constant ORACLE_PAYMENT = 1 * LINK_DIVISIBILITY;
+    uint256 private oracleFee;
     address private oracle;
     bytes32 private jobId;
 
@@ -50,7 +50,6 @@ contract Escrow is ChainlinkClient, Ownable {
 
     event ShipmentInprogress(string trackingNo);
     event ShipmentUpdated(bytes32 status);
-    event ShipmentDelivered(bytes32 status);
     event OrderCompleted(string trackingNo);
 
     modifier validStage(Stage _stage, string memory message) {
@@ -76,7 +75,8 @@ contract Escrow is ChainlinkClient, Ownable {
         address _seller,
         // address _currency,
         uint256 _price,
-        uint256 _lockPeriod
+        uint256 _lockPeriod,
+        uint256 _oracleFee
     ) external {
         require(msg.sender == factory, "FORBIDDEN");
         // setPublicChainlinkToken();
@@ -85,6 +85,7 @@ contract Escrow is ChainlinkClient, Ownable {
         oracle = _oracle;
         jobId = _jobId.stringToBytes32();
         lockPeriod = _lockPeriod;
+        oracleFee = _oracleFee;
 
         product.id = _id;
         product.name = _name;
@@ -145,7 +146,7 @@ contract Escrow is ChainlinkClient, Ownable {
         );
 
         req.add("trackingId", product.trackingId);
-        bytes32 requestId = sendChainlinkRequestTo(oracle, req, ORACLE_PAYMENT);
+        bytes32 requestId = sendChainlinkRequestTo(oracle, req, oracleFee);
         emit ChainlinkRequested(requestId);
     }
 
@@ -156,10 +157,9 @@ contract Escrow is ChainlinkClient, Ownable {
         product.deliveryStatus = _deliveryStatus.bytes32ToString();
         if (product.deliveryStatus.compareStrings("Delivered")) {
             product.stage = Stage.Delivered;
-            emit ShipmentDelivered(_deliveryStatus);
-        } else {
-            emit ShipmentUpdated(_deliveryStatus);
         }
+
+        emit ShipmentUpdated(_deliveryStatus);
     }
 
     function reclaimFund()
