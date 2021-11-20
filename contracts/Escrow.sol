@@ -113,6 +113,14 @@ contract Escrow is ChainlinkClient {
             product.stage == Stage.WaitForShipping;
     }
 
+    function isDeliveredFail() public view returns (bool) {
+        return
+            product.stage == Stage.Shipping &&
+            product.deliveryStatus.bytes32ToString().compareStrings(
+                "Exception"
+            );
+    }
+
     function cancelOrder() external onlyBuyer {
         require(isAbleToCancelOrder(), "Not allowed to cancel order");
         product.buyer = address(0);
@@ -157,6 +165,18 @@ contract Escrow is ChainlinkClient {
         }
 
         emit ShipmentUpdated(_deliveryStatus);
+    }
+
+    function reclaimBuyer(bool _reclaim) external onlyBuyer {
+        require(isDeliveredFail(), "Delivered in progress");
+        if (_reclaim) {
+            payable(msg.sender).transfer(address(this).balance);
+            product.stage = Stage.Initiate;
+            product.buyer = address(0);
+        } else {
+            // let's seller resend the product again
+            product.stage = Stage.WaitForShipping;
+        }
     }
 
     function reclaimFund()
