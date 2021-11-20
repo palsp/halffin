@@ -8,16 +8,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract EscrowFactory is Ownable {
     address linkToken;
     address oracle;
-    string jobId;
+    bytes32 jobId;
     uint256 public maxLockPeriod;
     uint256 public productCount;
     uint256 internal constant oracleFee = 1 * 10**18;
-    mapping(uint256 => address) public products;
 
     constructor(
+        bytes32 _jobId,
         address _linkToken,
         address _oracle,
-        string memory _jobId,
         uint256 _maxLockPeriod
     ) {
         require(_maxLockPeriod >= 0, "lock period must be greater than 0");
@@ -33,47 +32,39 @@ contract EscrowFactory is Ownable {
     function createProduct(
         string memory _name,
         uint256 _price,
+        string memory _productURI,
         uint256 _lockPeriod
     ) external {
-        uint256 lockPeriod = _lockPeriod;
-        if (lockPeriod > maxLockPeriod) {
-            lockPeriod = maxLockPeriod;
-        }
+        require(_lockPeriod <= maxLockPeriod, "Invalid lock time");
         uint256 newId = productCount;
-        bytes32 salt = keccak256(
-            abi.encodePacked(
-                linkToken,
-                oracle,
-                jobId,
-                newId,
-                _name,
-                msg.sender,
-                _price,
-                lockPeriod,
-                oracleFee
-            )
-        );
 
-        address product = address(new Escrow{salt: salt}());
+        // address product = address(new Escrow{salt: salt}());
+        address addr;
+        bytes memory bytecode = type(Escrow).creationCode;
+        bytes32 salt = keccak256(abi.encodePacked(newId, msg.sender, _price));
+        assembly {
+            addr := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
 
-        Escrow(product).init(
+        Escrow(addr).setProductURI(_productURI);
+
+        Escrow(addr).init(
+            _name,
+            jobId,
             linkToken,
             oracle,
-            jobId,
-            newId,
-            _name,
             msg.sender,
+            newId,
             _price,
-            lockPeriod,
+            _lockPeriod,
             oracleFee
         );
 
-        ERC20(linkToken).transfer(product, 3 * oracleFee);
+        ERC20(linkToken).transfer(addr, 3 * oracleFee);
 
         productCount++;
-        products[productCount] = product;
 
-        emit ProductCreated(msg.sender, product);
+        emit ProductCreated(msg.sender, addr);
     }
 
     function setMaxLockPeriod(uint256 _maxLockPeriod) external onlyOwner {

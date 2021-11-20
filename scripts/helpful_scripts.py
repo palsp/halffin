@@ -15,6 +15,7 @@ from web3 import Web3
 SELLING_PRICE = Web3.toWei(0.01, "ether")
 LOCK_PERIOD = 10  # 5 days
 PRODUCT_NAME = "iphone X"
+PRODUCT_URI = "https://picsum.photos/200"
 
 NON_FORKED_LOCAL_BLOCKCHAIN_ENVIRONMENTS = [
     "hardhat", "development", "ganache-local"]
