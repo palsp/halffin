@@ -63,7 +63,7 @@ contract EscrowFactory is Ownable {
             oracleFee
         );
 
-        ERC20(linkToken).transfer(addr, 3 * oracleFee);
+        ERC20(linkToken).transfer(addr, 1 * oracleFee);
 
         productCount++;
 
