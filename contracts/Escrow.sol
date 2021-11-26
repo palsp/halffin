@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "./strings.sol";
 
-contract Escrow is ChainlinkClient {
+contract Escrow is ChainlinkClient, Ownable {
     using Chainlink for Chainlink.Request;
     using strings for string;
     using strings for bytes32;
@@ -77,6 +77,7 @@ contract Escrow is ChainlinkClient {
     ) external onlyOwner {
         // setPublicChainlinkToken();
         setChainlinkToken(_link);
+        transferOwnership(_seller);
         oracle = _oracle;
         jobId = _jobId;
         oracleFee = _oracleFee;
