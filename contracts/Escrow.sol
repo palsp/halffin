@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "./strings.sol";
 
-contract Escrow is ChainlinkClient, Ownable {
+contract Escrow is ChainlinkClient {
     using Chainlink for Chainlink.Request;
     using strings for string;
     using strings for bytes32;
@@ -77,7 +77,6 @@ contract Escrow is ChainlinkClient, Ownable {
     ) external onlyOwner {
         // setPublicChainlinkToken();
         setChainlinkToken(_link);
-        transferOwnership(_seller);
         oracle = _oracle;
         jobId = _jobId;
         oracleFee = _oracleFee;
@@ -136,6 +135,7 @@ contract Escrow is ChainlinkClient, Ownable {
         onlyOwner
         validStage(Stage.WaitForShipping, "Invalid Stage")
     {
+        require(bytes(_trackingId).length > 0, "trackingId must not empty");
         product.stage = Stage.Shipping;
         product.trackingId = _trackingId;
         emit ShipmentInprogress(product.trackingId);
