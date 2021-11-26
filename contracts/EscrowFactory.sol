@@ -35,7 +35,10 @@ contract EscrowFactory is Ownable {
         string memory _productURI,
         uint256 _lockPeriod
     ) external {
-        require(_lockPeriod <= maxLockPeriod, "Invalid lock time");
+        if (_lockPeriod > maxLockPeriod) {
+            _lockPeriod = maxLockPeriod;
+        }
+
         uint256 newId = productCount;
 
         // address product = address(new Escrow{salt: salt}());
