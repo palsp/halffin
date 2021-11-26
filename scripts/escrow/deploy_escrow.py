@@ -1,5 +1,5 @@
-from brownie import Escrow, strings, config, network, Contract, interface
-from scripts.helpful_scripts import get_account, get_contract, SELLING_PRICE, LOCK_PERIOD, PRODUCT_NAME
+from brownie import Escrow, strings, config, network
+from scripts.helpful_scripts import get_account, get_contract, SELLING_PRICE, LOCK_PERIOD, PRODUCT_NAME, ORACLE_FEE
 from web3 import Web3
 
 
@@ -9,13 +9,15 @@ def deploy_escrow(seller, lock_period=LOCK_PERIOD, product_name=PRODUCT_NAME):
     escrow = Escrow.deploy(
         {"from": account}, publish_source=config["networks"][network.show_active()].get("verify", False))
     escrow.init(
+        product_name,
+        config["networks"][network.show_active()]["post_job_id"],
         get_contract("link_token").address,
         get_contract("oracle").address,
-        config["networks"][network.show_active()]["post_job_id"],
-        product_name,
         seller,
+        0,
         SELLING_PRICE,
         lock_period,
+        ORACLE_FEE,
         {"from": account}
     )
 
