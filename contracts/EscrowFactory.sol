@@ -4,8 +4,11 @@ pragma solidity ^0.8.7;
 import "./Escrow.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./strings.sol";
 
 contract EscrowFactory is Ownable {
+    using strings for string;
+
     address linkToken;
     address oracle;
     bytes32 jobId;
