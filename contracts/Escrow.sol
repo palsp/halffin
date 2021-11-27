@@ -178,6 +178,8 @@ contract Escrow is ChainlinkClient {
             // let's seller resend the product again
             product.stage = Stage.WaitForShipping;
         }
+
+        product.deliveryStatus = "";
     }
 
     function reclaimFund()
