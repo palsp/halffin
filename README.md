@@ -150,7 +150,7 @@ We provide a mock tracking number so that you do not need to ship anything in or
 HF123456789DL
 ```
 
-- Exception
+- Fail
 
 ```
 HF123456789EX
