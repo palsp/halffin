@@ -44,7 +44,7 @@ pip install eth-brownie
 ```bash
 npm --prefix halffin-adapter install
 or
-yarn -cwd halffin-adapter install
+yarn --cwd halffin-adapter install
 ```
 
 - start server
@@ -137,7 +137,7 @@ moralis-admin-cli watch-cloud-folder --moralisApiKey <MORALIS_API_KEY>
 11. Start frontend
 
 ```bash
-yarn -cwd halffin-frontend start
+yarn --cwd halffin-frontend start
 ```
 
 ## Mock Tracking Number
