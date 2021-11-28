@@ -1,4 +1,6 @@
-# Halffin-contract
+# Halffin
+
+Halffin is a peer to peer marketplace of real world assets using chainlink oracle to track delivery status of buyers shipment ensuring buyers will be charged only if the shipment is delivered. This project is part of Chainlink Hackathon Fall 2021.
 
 ## Prerequisites
 
@@ -6,10 +8,19 @@ Please install or have installed the following:
 
 - [nodejs and npm](https://nodejs.org/en/download/)
 - [python](https://www.python.org/downloads/)
+- [aws](https://aws.amazon.com/)
+- [moralis](https://moralis.io/)
 
 ## Installation
 
-1. [Install Brownie](https://eth-brownie.readthedocs.io/en/stable/install.html), if you haven't already. Here is a simple way to install brownie.
+1. Set up repo
+
+```bash
+git clone https://github.com/palsp/halffin-adapter.git
+git clone https://github.com/palsp/halffin-frontend.git
+```
+
+2. [Install Brownie](https://eth-brownie.readthedocs.io/en/stable/install.html), if you haven't already. Here is a simple way to install brownie.
 
 ```bash
 python3 -m pip install --user pipx
@@ -24,172 +35,132 @@ Or, if that doesn't work, via pip
 pip install eth-brownie
 ```
 
-2. [Set up and install Chainlink node](https://docs.chain.link/docs/running-a-chainlink-node/)
+3. [Set up Chainlink node](https://docs.chain.link/docs/running-a-chainlink-node/)
 
-3. [Set up external adapters](https://github.com/palsp/halffin-adapter)
+4. Set up external adapters
 
-## Testnet Development
-
-If you want to be able to deploy to testnets, do the following.
-
-Set your `WEB3_INFURA_PROJECT_ID`, `PRIVATE_KEY`, and `CHAINLINK_NODE_ADDRESS` [environment variables](https://www.twilio.com/blog/2017/01/how-to-set-environment-variables.html).
-
-You can get a `WEB3_INFURA_PROJECT_ID` by getting a free trial of [Infura](https://infura.io/). At the moment, it does need to be infura with brownie. If you get lost, you can [follow this guide](https://ethereumico.io/knowledge-base/infura-api-key-guide/) to getting a project key. You can find your `PRIVATE_KEY` from your ethereum wallet like [metamask](https://metamask.io/).
-
-You'll also need testnet ETH and LINK. You can get LINK and ETH into your wallet by using the [faucets located here](https://docs.chain.link/docs/link-token-contracts). If you're new to this, [watch this video.](https://www.youtube.com/watch?v=P7FX_1PePX0). Look at the `rinkeby` and `kovan` sections for those specific testnet faucets.
-
-You'll need chainlink node and external adapters.
-
-You can add your environment variables to a `.env` file. You can use the [.env.exmple](https://github.com/smartcontractkit/chainlink-mix/blob/master/.env.example) as a template, just fill in the values and rename it to '.env'. Then, uncomment the line `# dotenv: .env` in `brownie-config.yaml`
-
-Here is what your `.env` should look like:
-
-```
-export WEB3_INFURA_PROJECT_ID=<PROJECT_ID>
-export PRIVATE_KEY=<PRIVATE_KEY>
-export CHAINLINK_NODE_ADDRESS=<NODE_ADDRESS>
-```
-
-AND THEN RUN `source .env` TO ACTIVATE THE ENV VARIABLES
-(You'll need to do this everytime you open a new terminal, or [learn how to set them easier](https://www.twilio.com/blog/2017/01/how-to-set-environment-variables.html))
-
-![WARNING](https://via.placeholder.com/15/f03c15/000000?text=+) **WARNING** ![WARNING](https://via.placeholder.com/15/f03c15/000000?text=+)
-
-DO NOT SEND YOUR PRIVATE KEY WITH FUNDS IN IT ONTO GITHUB
-
-Otherwise, you can build, test, and deploy on your local environment.
-
-## Local Development
-
-For local testing [install ganache-cli](https://www.npmjs.com/package/ganache-cli)
+- install dependencies
 
 ```bash
-npm install -g ganache-cli
-```
-
+npm --prefix halffin-adapter install
 or
+yarn -cwd halffin-adapter install
+```
+
+- start server
 
 ```bash
-yarn add global ganache-cli
+yarn emulator:start
 ```
 
-All the scripts are designed to work locally or on a testnet. You can add a ganache-cli or ganache UI chain like so:
+> NOTE: We use AWS DynamoDB in this step, please set up aws cli and sufficient iam permission to create DynamoDB Table
 
+5. Setup env
+
+Set your `WEB3_INFURA_PROJECT_ID`, `PRIVATE_KEY`, and `CHAINLINK_NODE_ADDRESS` environment variable
+
+- You can get a `WEB3_INFURA_PROJECT_ID` by getting a free trial of [Infura](https://infura.io/)
+- You can find your `PRIVATE_KEY` from your ethereum wallet like [metamask](https://metamask.io/).
+- You can get a `CHAINLINK_NODE_ADDRESS` from gui of chainlik node.
+  - Go to Keys > Account Address > Address
+
+6. deploy oracle
+
+```bash
+brownie run scripts/oracle_node/deploy_oracle --network kovan
 ```
-brownie networks add Ethereum ganache host=http://localhost:8545 chainid=1337
+
+7. Setup bridge and create job
+
+- Copy url of the adapter and paste it the chainlink node gui.
+  <img src="./bridge.png" alt="chainlink-bridge">
+
+> You can use `localhost:3000` for local development
+
+- Create a job in chainlink node gui using the following job's description. Replace `ORACLE_ADDRESS` with the oracle's address deployed in the previous step and `BRIDGE_NAME` with the bridge name.
+
+```toml
+type = "directrequest"
+schemaVersion = 1
+name = "get-tracking-detail"
+contractAddress = <ORACLE_ADDRESS>
+maxTaskDuration = "0s"
+observationSource = """
+       decode_log   [type="ethabidecodelog"
+                     abi="OracleRequest(bytes32 indexed specId, address requester, bytes32 requestId, uint256 payment, address callbackAddr, bytes4 callbackFunctionId, uint256 cancelExpiration, uint256 dataVersion, bytes data)"
+                     data="$(jobRun.logData)"
+                     topics="$(jobRun.logTopics)"]
+
+       decode_cbor  [type="cborparse" data="$(decode_log.data)"]
+       fetch        [type=bridge name=<BRIDGE_NAME> requestData="{\\"id\\" : $(jobSpec.externalJobID), \\"data\\" : { \\"trackingId\\" : $(decode_cbor.trackingId)}}"]
+       parse        [type="jsonparse" path="data,tracking,tag" data="$(fetch)"]
+       encode_data  [type="ethabiencode" abi="(bytes32 value)" data="{ \\"value\\": $(parse) }"]
+       encode_tx    [type="ethabiencode"
+                     abi="fulfillOracleRequest(bytes32 requestId, uint256 payment, address callbackAddress, bytes4 callbackFunctionId, uint256 expiration, bytes32 data)"
+                     data="{\\"requestId\\": $(decode_log.requestId), \\"payment\\": $(decode_log.payment), \\"callbackAddress\\": $(decode_log.callbackAddr), \\"callbackFunctionId\\": $(decode_log.callbackFunctionId), \\"expiration\\": $(decode_log.cancelExpiration), \\"data\\": $(encode_data)}"
+                   ]
+       submit_tx    [type="ethtx" to=<ORACLE_ADDRESS> data="$(encode_tx)"]
+
+       decode_log -> decode_cbor -> fetch -> parse -> encode_data -> encode_tx -> submit_tx
+     """
 ```
 
-And update the brownie config accordingly. There is a `deploy_mocks` script that will launch and deploy mock Oracles, VRFCoordinators, Link Tokens, and Price Feeds on a Local Blockchain.
+- Once created you will received external Job ID. Paste the job id in `brownie-config.yaml` post_job_id field.
 
-## Running Scripts and Deployment
+8. contract deployment
 
 > NOTE: We will keep our adapter and chainlink node up and running on kovan network until the end of December 2021. if you are running on kovan and wish to use our oracle, feel free to skip to instruction 3.
 
-1. deploy oracle and allow fulfill permission for our chainlink node
-
-```
-brownie run scripts/oracle_node/deploy_oracle.py --network kovan
-```
-
-2. copy the deployed oracle address and paste it in the external adapter job description
-
-3. deploy factory contract
-
-```
+```bash
 brownie run scripts/escrow-factory/deploy_factory.py --network kovan
 ```
 
-4. create sample escrow contract
-
-```
-brownie run scripts/escrow-factory/create_product.py --network kovan
-```
-
-### Local Development
-
-For local development, you might want to deploy mocks. You can run the script to deploy mocks. Depending on your setup, it might make sense to _not_ deploy mocks if you're looking to fork a mainnet. It all depends on what you're looking to do though. Right now, the scripts automatically deploy a mock so they can run.
-
-## Testing
-
-```
-brownie test
-```
-
-For more information on effective testing with Chainlink, check out [Testing Smart Contracts](https://blog.chain.link/testing-chainlink-smart-contracts/)
-
-Tests are really robust here! They work for local development and testnets. There are a few key differences between the testnets and the local networks. We utilize mocks so we can work with fake oracles on our testnets.
-
-There is a `test_unnecessary` folder, which is a good exersize for learning some of the nitty-gritty of smart contract development. It's overkill, so pytest will skip them intentionally. It also has a `test_samples` folder, which shows an example Chainlink API call transaction receipt.
-
-### To test development / local
+9. Setup frontend
 
 ```bash
-brownie test
+yarn --cwd halffin-frontend install
 ```
 
-### To test mainnet-fork
+Set your `REACT_APP_MORALIS_SERVER_URL`, `REACT_APP_MORALIS_APP_ID`, `REACT_APP_TRACKING_SERVER_URL`, and `REACT_APP_NFTSTORAGE_TOKEN` environment variable
 
-This will test the same way as local testing, but you will need a connection to a mainnet blockchain (like with the infura environment variable.)
+- You can get `REACT_APP_MORALIS_SERVER_URL` and `REACT_APP_MORALIS_APP_ID` from your moralis dashboard.
+- `REACT_APP_TRACKING_SERVER_URL` is the external adapter from step 3
+- You can get `REACT_APP_NFTSTORAGE_TOKEN` from [nft.storage](https://nft.storage/)
+
+10. Deploy Moralis cloud function
 
 ```bash
-brownie test --network mainnet-fork
+moralis-admin-cli watch-cloud-folder --moralisApiKey <MORALIS_API_KEY>
+--moralisApiSecret <MORALIS_API_SECRET> --moralisSubdomain <MORALIS_SUB_DOMAIN> --autoSave 1 --moralisCloudfolder halffin-frontend/cloud_function
 ```
 
-### To test a testnet
-
-Kovan and Rinkeby are currently supported
+11. Start frontend
 
 ```bash
-brownie test --network kovan
+yarn -cwd halffin-frontend start
 ```
 
-## Adding additional Chains
+## Mock Tracking Number
 
-If the blockchain is EVM Compatible, adding new chains can be accomplished by something like:
+We provide a mock tracking number so that you do not need to ship anything in order to use our platform. Here the list of tracking number as well as its related delivery status
 
-```
-brownie networks add Ethereum binance-smart-chain host=https://bsc-dataseed1.binance.org chainid=56
-```
-
-or, for a fork:
+- Delivered
 
 ```
-brownie networks add development binance-fork cmd=ganache-cli host=http://127.0.0.1 fork=https://bsc-dataseed1.binance.org accounts=10 mnemonic=brownie port=8545
+HF123456789DL
 ```
 
-## Linting
+- Exception
 
 ```
-pip install black
-pip install autoflake
-autoflake --in-place --remove-unused-variables --remove-all-unused-imports -r .
-black .
+HF123456789EX
 ```
 
-If you're using [vscode](https://code.visualstudio.com/) and the [solidity extension](https://github.com/juanfranblanco/vscode-solidity), you can create a folder called `.vscode` at the root folder of this project, and create a file called `settings.json`, and add the following content:
+- In Transit
 
-```json
-{
-  "solidity.remappings": [
-    "@chainlink/=[YOUR_HOME_DIR]/.brownie/packages/smartcontractkit/chainlink-brownie-contracts@0.2.2",
-    "@openzeppelin/=[YOUR_HOME_DIR]/.brownie/packages/OpenZeppelin/openzeppelin-contracts@4.3.2"
-  ]
-}
 ```
-
-This will quiet the linting errors it gives you.
-
-## Resources
-
-To get started with Brownie:
-
-- [Chainlink Documentation](https://docs.chain.link/docs)
-- Check out the [Chainlink documentation](https://docs.chain.link/docs) to get started from any level of smart contract engineering.
-- Check out the other [Brownie mixes](https://github.com/brownie-mix/) that can be used as a starting point for your own contracts. They also provide example code to help you get started.
-- ["Getting Started with Brownie"](https://medium.com/@iamdefinitelyahuman/getting-started-with-brownie-part-1-9b2181f4cb99) is a good tutorial to help you familiarize yourself with Brownie.
-- For more in-depth information, read the [Brownie documentation](https://eth-brownie.readthedocs.io/en/stable/).
-
-Any questions? Join our [Discord](https://discord.gg/2YHSAey)
+HF123456789IT
+```
 
 ## License
 
