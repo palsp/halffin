@@ -1,6 +1,7 @@
 # Halffin
 
-Halffin is a peer to peer marketplace of real world assets using chainlink oracle to track delivery status of buyers shipment ensuring buyers will be charged only if the shipment is delivered. This project is part of Chainlink Hackathon Fall 2021.
+Halffin is a peer-to-peer real-world assets marketplace where strangers can trade without middlemen using chainlink oracle to track delivery status ensuring buyers will be charged only if the product is received. This project is part of Chainlink Hackathon Fall 2021.
+
 
 ## Prerequisites
 
